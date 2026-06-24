@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generador de Propuestas Comerciales</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0F172A;--blue:#1E40AF;--accent:#3B82F6;--gold:#F59E0B;
+  --g100:#F8FAFC;--g200:#E2E8F0;--g300:#CBD5E1;--g400:#94A3B8;
+  --g500:#64748B;--g700:#334155;--g800:#1E293B;--white:#fff;
+}
+body{font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,sans-serif;background:#DDE3EE;color:var(--g800);line-height:1.6;min-height:100vh}
+.app{display:grid;grid-template-columns:400px 1fr;min-height:100vh}
+
+/* ── SIDEBAR ── */
+.sidebar{background:var(--white);border-right:1px solid var(--g200);padding:1.75rem 1.5rem;overflow-y:auto;height:100vh;position:sticky;top:0}
+.sb-logo{display:flex;align-items:center;gap:.6rem;margin-bottom:1.5rem;padding-bottom:1.25rem;border-bottom:2px solid var(--g200)}
+.sb-logo .icon{width:34px;height:34px;background:var(--navy);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.9rem}
+.sb-logo h1{font-size:1rem;font-weight:700;color:var(--navy);letter-spacing:-.02em}
+.sb-logo p{font-size:.7rem;color:var(--g400)}
+.sec-tag{font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);display:flex;align-items:center;gap:.5rem;margin-bottom:.75rem;margin-top:1.25rem}
+.sec-tag::after{content:'';flex:1;height:1px;background:var(--g200)}
+.fg{margin-bottom:.75rem}
+.fg label{display:block;font-size:.75rem;font-weight:600;color:var(--g500);margin-bottom:.3rem}
+.fg input{width:100%;padding:.55rem .8rem;border:1.5px solid var(--g200);border-radius:8px;font-size:.825rem;font-family:inherit;color:var(--g800);outline:none;transition:border .15s,box-shadow .15s}
+.fg input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,130,246,.1)}
+.scope-row{display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem}
+.sc-num{width:22px;height:22px;min-width:22px;background:var(--navy);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:800}
+.btn-gen{width:100%;padding:.8rem;background:linear-gradient(135deg,var(--navy) 0%,var(--blue) 100%);color:#fff;border:none;border-radius:10px;font-size:.875rem;font-weight:700;cursor:pointer;letter-spacing:.02em;transition:opacity .2s,transform .15s;margin-top:1.25rem;display:flex;align-items:center;justify-content:center;gap:.5rem}
+.btn-gen:hover{opacity:.88;transform:translateY(-1px)}
+
+/* ── PREVIEW AREA ── */
+.preview{padding:2.5rem;display:flex;flex-direction:column;align-items:center}
+.ptoolbar{width:100%;max-width:780px;display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem}
+.ptoolbar span{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--g400)}
+.btn-pdf{display:none;align-items:center;gap:.45rem;padding:.55rem 1.1rem;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:.775rem;font-weight:700;cursor:pointer;transition:background .2s,transform .15s}
+.btn-pdf:hover{background:var(--navy);transform:translateY(-1px)}
+.btn-pdf.show{display:flex}
+
+/* Empty state */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:560px;color:var(--g300);text-align:center}
+.empty svg{margin-bottom:1.25rem;opacity:.5}
+.empty h3{font-size:1rem;font-weight:600;color:var(--g400);margin-bottom:.35rem}
+.empty p{font-size:.78rem;color:var(--g400)}
+
+/* ── PROPOSAL DOC ── */
+.pdoc{width:780px;background:var(--white);box-shadow:0 24px 64px rgba(0,0,0,.18);border-radius:6px;overflow:hidden}
+
+/* Header */
+.ph{background:var(--navy);padding:2.5rem 3rem 2rem;display:flex;justify-content:space-between;align-items:flex-start;position:relative}
+.ph::after{content:'';position:absolute;bottom:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--gold),var(--accent))}
+.ph-left{display:flex;align-items:center;gap:.875rem}
+.logobox{width:48px;height:48px;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.25);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:800;color:#fff;letter-spacing:-.05em;flex-shrink:0}
+.ag-name{color:#fff;font-size:1rem;font-weight:700}
+.ag-sub{color:rgba(255,255,255,.4);font-size:.65rem;margin-top:.1rem}
+.ph-right{text-align:right}
+.badge{display:inline-block;background:var(--gold);color:var(--navy);font-size:.58rem;font-weight:800;text-transform:uppercase;letter-spacing:.15em;padding:.25rem .65rem;border-radius:20px;margin-bottom:.6rem}
+.ph-title{color:#fff;font-size:1.5rem;font-weight:800;letter-spacing:-.03em;line-height:1.2;max-width:340px;text-align:right}
+.ph-meta{color:rgba(255,255,255,.35);font-size:.65rem;margin-top:.4rem}
+
+/* Body */
+.pb{padding:2.25rem 3rem}
+
+/* Client block */
+.cblock{background:var(--g100);border-left:4px solid var(--accent);border-radius:0 10px 10px 0;padding:1.1rem 1.4rem;margin-bottom:2rem;display:grid;grid-template-columns:1fr 1fr;gap:.85rem}
+.cf label{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--g400);display:block;margin-bottom:.15rem}
+.cf span{font-size:.875rem;font-weight:600;color:var(--g800)}
+
+/* Section */
+.psec{margin-bottom:1.75rem}
+.psec-title{font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);display:flex;align-items:center;gap:.65rem;margin-bottom:.85rem}
+.psec-title::after{content:'';flex:1;height:1px;background:var(--g200)}
+.psec-num{width:20px;height:20px;background:var(--navy);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.58rem;font-weight:800;flex-shrink:0}
+
+/* Service box */
+.svcbox{background:var(--g100);border:1.5px solid var(--g200);border-radius:10px;padding:1.1rem 1.35rem}
+.svc-name{font-size:1.05rem;font-weight:700;color:var(--navy);margin-bottom:.3rem}
+.svc-desc{font-size:.8rem;color:var(--g500);line-height:1.65}
+
+/* Scope */
+.sclist{list-style:none;display:flex;flex-direction:column;gap:.55rem}
+.sclist li{display:flex;align-items:flex-start;gap:.65rem;font-size:.83rem;color:var(--g700);line-height:1.5}
+.scdot{width:7px;height:7px;min-width:7px;background:var(--gold);border-radius:50%;margin-top:.4rem}
+
+/* KPI Grid */
+.kgrid{display:grid;grid-template-columns:1fr 1fr;gap:.875rem}
+.kcard{background:var(--navy);border-radius:12px;padding:1.1rem 1.35rem}
+.kcard.b{background:linear-gradient(135deg,#1E3A5F,#1E40AF)}
+.klbl{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.45);margin-bottom:.35rem}
+.kval{font-size:1.35rem;font-weight:800;color:#fff;letter-spacing:-.02em;line-height:1.2}
+.ksub{font-size:.65rem;color:rgba(255,255,255,.35);margin-top:.25rem}
+
+/* Signatures */
+.siggrid{display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:.25rem}
+.sigblock{text-align:center}
+.sigline{border-bottom:1.5px solid var(--g200);height:44px;margin-bottom:.4rem}
+.signame{font-size:.78rem;font-weight:700;color:var(--g800)}
+.siglbl{font-size:.65rem;color:var(--g400)}
+
+/* Footer */
+.pfooter{margin-top:2rem;padding-top:1.25rem;border-top:1px solid var(--g200);display:flex;justify-content:space-between;align-items:center}
+.pfooter p{font-size:.67rem;color:var(--g400)}
+.pfooter strong{font-size:.72rem;font-weight:700;color:var(--navy)}
+
+@media print{
+  body,html{background:white}
+  .sidebar,.ptoolbar{display:none!important}
+  .app{display:block}
+  .preview{padding:0;background:white}
+  .pdoc{width:100%;box-shadow:none;border-radius:0}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- FORM -->
+  <aside class="sidebar">
+    <div class="sb-logo">
+      <div class="icon">📄</div>
+      <div>
+        <h1>Propuestas Comerciales</h1>
+        <p>Generador profesional</p>
+      </div>
+    </div>
+
+    <div class="sec-tag">Tu Agencia</div>
+    <div class="fg"><label>Nombre de tu agencia</label><input id="agencyName" type="text" placeholder="Ej: Estudio Creativo SAS"></div>
+
+    <div class="sec-tag">Datos del Cliente</div>
+    <div class="fg"><label>Nombre del cliente</label><input id="clientName" type="text" placeholder="Ej: María García"></div>
+    <div class="fg"><label>Empresa del cliente</label><input id="clientCompany" type="text" placeholder="Ej: Comercial XYZ S.A."></div>
+
+    <div class="sec-tag">El Proyecto</div>
+    <div class="fg"><label>Servicio ofrecido</label><input id="serviceName" type="text" placeholder="Ej: Diseño de identidad corporativa"></div>
+    <div class="fg"><label>Precio total</label><input id="price" type="text" placeholder="Ej: $5.000.000 COP"></div>
+    <div class="fg"><label>Plazo de entrega</label><input id="deadline" type="text" placeholder="Ej: 30 días hábiles"></div>
+
+    <div class="sec-tag">Alcance del Servicio</div>
+    <div class="scope-row"><div class="sc-num">1</div><input type="text" id="sc1" placeholder="Ej: Análisis y diagnóstico de marca"></div>
+    <div class="scope-row"><div class="sc-num">2</div><input type="text" id="sc2" placeholder="Ej: Diseño de logotipo (3 propuestas)"></div>
+    <div class="scope-row"><div class="sc-num">3</div><input type="text" id="sc3" placeholder="Ej: Manual de marca básico"></div>
+
+    <button class="btn-gen" onclick="generate()">✦ Generar Propuesta</button>
+  </aside>
+
+  <!-- PREVIEW -->
+  <main class="preview">
+    <div class="ptoolbar">
+      <span>Vista previa</span>
+      <button class="btn-pdf" id="pdfBtn" onclick="downloadPDF()">⬇ Descargar PDF</button>
+    </div>
+    <div id="container">
+      <div class="empty">
+        <svg width="64" height="64" viewBox="0 0 64 64" fill="none"><rect x="8" y="4" width="40" height="52" rx="4" fill="#CBD5E1"/><rect x="14" y="16" width="28" height="3" rx="1.5" fill="#94A3B8"/><rect x="14" y="24" width="20" height="3" rx="1.5" fill="#CBD5E1"/><rect x="14" y="32" width="24" height="3" rx="1.5" fill="#CBD5E1"/><circle cx="50" cy="50" r="12" fill="#3B82F6"/><path d="M45 50h10M50 45v10" stroke="white" stroke-width="2.5" stroke-linecap="round"/></svg>
+        <h3>Tu propuesta aparecerá aquí</h3>
+        <p>Completa el formulario y haz clic en "Generar Propuesta"</p>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const v = id => ($(id)?.value?.trim() || '');
+
+function fmtDate(){
+  const d=new Date(),ms=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  return `${d.getDate()} de ${ms[d.getMonth()]} de ${d.getFullYear()}`;
+}
+function propNum(){return `PROP-${new Date().getFullYear()}-${Math.floor(Math.random()*900)+100}`}
+function initials(n){return(n||'?').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase()}
+
+function generate(){
+  const ag=v('agencyName')||'Mi Agencia';
+  const cn=v('clientName')||'Cliente';
+  const cc=v('clientCompany')||'—';
+  const sv=v('serviceName')||'Servicio';
+  const pr=v('price')||'—';
+  const dl=v('deadline')||'—';
+  const scopes=[v('sc1'),v('sc2'),v('sc3')].filter(Boolean);
+  const scHtml=scopes.length
+    ?scopes.map(s=>`<li><div class="scdot"></div><span>${s}</span></li>`).join('')
+    :`<li><div class="scdot"></div><span>A definir con el cliente</span></li>`;
+  const pn=propNum(), dt=fmtDate(), ini=initials(ag);
+
+  $('container').innerHTML=`
+  <div class="pdoc" id="pdoc">
+    <div class="ph">
+      <div class="ph-left">
+        <div class="logobox">${ini}</div>
+        <div><div class="ag-name">${ag}</div><div class="ag-sub">Propuesta Comercial</div></div>
+      </div>
+      <div class="ph-right">
+        <div class="badge">Propuesta Comercial</div>
+        <div class="ph-title">${sv}</div>
+        <div class="ph-meta">${pn} &nbsp;·&nbsp; ${dt}</div>
+      </div>
+    </div>
+    <div class="pb">
+      <div class="cblock">
+        <div class="cf"><label>Preparado para</label><span>${cn}</span></div>
+        <div class="cf"><label>Empresa cliente</label><span>${cc}</span></div>
+        <div class="cf"><label>Presentado por</label><span>${ag}</span></div>
+        <div class="cf"><label>Fecha de emisión</label><span>${dt}</span></div>
+      </div>
+
+      <div class="psec">
+        <div class="psec-title"><div class="psec-num">01</div>Descripción del servicio</div>
+        <div class="svcbox">
+          <div class="svc-name">${sv}</div>
+          <p class="svc-desc">A continuación se detalla el alcance de entregables y condiciones comerciales incluidas en esta propuesta, presentada formalmente por <strong>${ag}</strong> para <strong>${cc}</strong>.</p>
+        </div>
+      </div>
+
+      <div class="psec">
+        <div class="psec-title"><div class="psec-num">02</div>Alcance del trabajo</div>
+        <ul class="sclist">${scHtml}</ul>
+      </div>
+
+      <div class="psec">
+        <div class="psec-title"><div class="psec-num">03</div>Inversión y plazo</div>
+        <div class="kgrid">
+          <div class="kcard">
+            <div class="klbl">Inversión total</div>
+            <div class="kval">${pr}</div>
+            <div class="ksub">Precio fijo · Incluye revisiones</div>
+          </div>
+          <div class="kcard b">
+            <div class="klbl">Plazo de entrega</div>
+            <div class="kval" style="font-size:1.1rem">${dl}</div>
+            <div class="ksub">A partir de la aprobación</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="psec">
+        <div class="psec-title"><div class="psec-num">04</div>Aprobación y firma</div>
+        <div class="siggrid">
+          <div class="sigblock">
+            <div class="sigline"></div>
+            <div class="signame">${ag}</div>
+            <div class="siglbl">Proveedor del servicio</div>
+          </div>
+          <div class="sigblock">
+            <div class="sigline"></div>
+            <div class="signame">${cn} · ${cc}</div>
+            <div class="siglbl">Cliente</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pfooter">
+        <p>Ref: ${pn} &nbsp;·&nbsp; Válida por 30 días a partir de la fecha de emisión</p>
+        <strong>${ag}</strong>
+      </div>
+    </div>
+  </div>`;
+
+  const btn=$('pdfBtn');
+  btn.classList.add('show');
+}
+
+function downloadPDF(){
+  const doc=$('pdoc');
+  if(!doc)return;
+  const css=Array.from(document.querySelectorAll('style')).map(s=>s.innerHTML).join('');
+  const win=window.open('','_blank','width=900,height=700');
+  win.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Propuesta Comercial</title>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#1E293B;line-height:1.6}
+    ${css}
+    @page{size:A4;margin:0}
+    body{width:210mm;min-height:297mm}
+    .pdoc{width:100%;box-shadow:none;border-radius:0}
+  </style></head><body>${doc.outerHTML}
+  <script>window.onload=function(){window.print();setTimeout(()=>window.close(),800)}<\/script>
+  </body></html>`);
+  win.document.close();
+}
+</script>
+</body>
+</html>
